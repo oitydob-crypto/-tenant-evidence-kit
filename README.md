@@ -2,6 +2,8 @@
 
 A small TypeScript toolkit for **private, multi-tenant evidence workflows with Supabase**.
 
+**npm:** [`tenant-evidence-kit`](https://www.npmjs.com/package/tenant-evidence-kit) · **latest:** `0.1.0`
+
 It provides a reference architecture for a common problem: an application needs to attach photos, documents, or other evidence to a business object without making files public, leaking tenant data, or duplicating authorization rules across the UI and storage layer.
 
 ## What it does
@@ -57,7 +59,13 @@ It also creates the `tek_create_tenant()` RPC and RLS policies that verify tenan
 
 ### 2. Install
 
-The package is not published to npm yet. During the initial public release, install directly from GitHub after cloning, or use the source in a workspace.
+Install the published package from npm:
+
+```bash
+npm install tenant-evidence-kit
+```
+
+For local development of this repository:
 
 ```bash
 npm install
