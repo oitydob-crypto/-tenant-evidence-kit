@@ -1,0 +1,47 @@
+{
+  "name": "tenant-evidence-kit",
+  "version": "0.1.0",
+  "description": "A TypeScript toolkit for private, multi-tenant evidence workflows with Supabase.",
+  "type": "module",
+  "license": "MIT",
+  "sideEffects": false,
+  "files": [
+    "dist",
+    "supabase"
+  ],
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "check": "npm run typecheck && npm test && npm run build"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "peerDependencies": {
+    "@supabase/supabase-js": "^2.0.0"
+  },
+  "devDependencies": {
+    "@supabase/supabase-js": "^2.57.4",
+    "typescript": "^5.9.2",
+    "vitest": "^3.2.4"
+  },
+  "keywords": [
+    "supabase",
+    "typescript",
+    "multi-tenant",
+    "rls",
+    "storage",
+    "evidence",
+    "signed-url",
+    "privacy"
+  ]
+}
