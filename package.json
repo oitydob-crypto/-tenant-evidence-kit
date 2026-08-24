@@ -5,6 +5,17 @@
   "type": "module",
   "license": "MIT",
   "sideEffects": false,
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/oitydob-crypto/tenant-evidence-kit.git"
+  },
+  "homepage": "https://github.com/oitydob-crypto/tenant-evidence-kit#readme",
+  "bugs": {
+    "url": "https://github.com/oitydob-crypto/tenant-evidence-kit/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "files": [
     "dist",
     "supabase"
