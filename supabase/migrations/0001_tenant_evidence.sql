@@ -2,8 +2,7 @@ create extension if not exists pgcrypto;
 
 create schema if not exists tek_private;
 revoke all on schema tek_private from public, anon, authenticated;
-
-grant usage on schema tek_private to postgres, service_role;
+grant usage on schema tek_private to postgres, service_role, authenticated;
 
 create table if not exists public.tek_tenants (
   id uuid primary key default gen_random_uuid(),
@@ -24,7 +23,7 @@ create table if not exists public.tek_tenant_memberships (
 create table if not exists public.tek_evidence (
   id uuid primary key default gen_random_uuid(),
   tenant_id uuid not null references public.tek_tenants(id) on delete cascade,
-  subject_id uuid not null,
+  subject_id text not null check (length(trim(subject_id)) > 0),
   kind text not null default 'photo' check (kind in ('photo', 'document', 'other')),
   file_path text not null unique,
   recorded_at timestamptz not null default now(),
