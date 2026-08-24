@@ -1,10 +1,10 @@
 export { TenantEvidenceError } from "./errors";
 export { buildEvidencePath, sanitizeFileName } from "./path";
+export type { EvidencePathInput } from "./path";
 export { createTenantEvidenceKit } from "./kit";
 export type {
   EvidenceKind,
   EvidenceRecord,
-  EvidencePathInput,
   ListEvidenceInput,
   SignedEvidenceUrlInput,
   TenantEvidenceKitOptions,
