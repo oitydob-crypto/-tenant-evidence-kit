@@ -2,7 +2,7 @@
 
 A small TypeScript toolkit for **private, multi-tenant evidence workflows with Supabase**.
 
-**npm:** [`tenant-evidence-kit`](https://www.npmjs.com/package/tenant-evidence-kit) · **latest:** `0.1.2`
+**npm:** [`tenant-evidence-kit`](https://www.npmjs.com/package/tenant-evidence-kit) · **latest:** `0.1.3`
 
 It provides a reference architecture for a common problem: an application needs to attach photos, documents, or other evidence to a business object without making files public, leaking tenant data, or duplicating authorization rules across the UI and storage layer.
 
@@ -14,7 +14,7 @@ It provides a reference architecture for a common problem: an application needs 
 - uses **Row Level Security (RLS)** for tenant isolation;
 - creates short-lived **signed URLs** instead of permanent public links;
 - compensates for a metadata failure by removing the uploaded object;
-- ships a reference SQL migration for tenant bootstrap, membership, evidence metadata, and Storage policies;
+- ships reference SQL migrations for tenant bootstrap, membership, evidence metadata, authorization, and Storage policies;
 - stays intentionally small: it does not impose a CRM, healthcare, rental, document, or workflow domain model.
 
 ## Why this exists
@@ -25,9 +25,9 @@ Tenant Evidence Kit keeps the reusable infrastructure separate from the product 
 
 ## Status
 
-**v0.1.2 — early public release.**
+**v0.1.3 — early public release.**
 
-The core path, upload, metadata, listing, signed-access flow, reference RLS model, and tests are present. The API may still evolve before 1.0.
+The core path, upload, metadata, listing, signed-access flow, reference RLS model, operation-specific authorization, upgrade migration, and local Supabase authorization tests are present. The API may still evolve before 1.0.
 
 ## Requirements
 
@@ -38,15 +38,22 @@ The core path, upload, metadata, listing, signed-access flow, reference RLS mode
 
 ## Quick start
 
-### 1. Apply the reference migration
+### 1. Apply the reference migrations
 
-Run:
+For a new installation, apply the migrations in order:
 
 ```text
 supabase/migrations/0001_tenant_evidence.sql
+supabase/migrations/0002_authorization_hardening.sql
 ```
 
-The migration creates:
+If you already applied the schema shipped before v0.1.3, apply only the upgrade migration:
+
+```text
+supabase/migrations/0002_authorization_hardening.sql
+```
+
+The migrations create and configure:
 
 ```text
 tek_tenants
@@ -55,7 +62,7 @@ tek_evidence
 tenant-evidence-private (private Storage bucket)
 ```
 
-It also creates the `tek_create_tenant()` RPC and RLS policies that verify an active tenant role and an explicit operation permission for database rows and Storage objects.
+They also create the `tek_create_tenant()` RPC and RLS policies that verify an active tenant role and an explicit operation permission for database rows and Storage objects.
 
 ### 2. Install
 
@@ -158,7 +165,19 @@ The bundled schema assigns sensitive deletion to `owner` and `admin`. Other acti
 
 Deletion is the sensitive operation reserved for owners and admins. Active members retain read and creation access, preserving the behavior of earlier releases. The metadata and Storage policies use the same permission for each operation, so an ordinary member cannot delete either side independently. Changing a record is intentionally not a permission at all. If facts need correcting, the consuming product should preserve the original evidence and append a new record or use an application-specific supersession model.
 
-See [SECURITY.md](SECURITY.md) before using the reference migration in production.
+See [SECURITY.md](SECURITY.md) before using the reference migrations in production.
+
+## Authorization tests
+
+The repository includes local Supabase/pgTAP tests for the authorization boundary. They cover:
+
+- owner/admin evidence deletion;
+- ordinary-member delete denial;
+- same-tenant read/create access;
+- cross-tenant read/insert/update/delete denial;
+- explicit blocking of in-place evidence updates.
+
+These database authorization tests run in CI alongside typechecking, unit tests, and the package build.
 
 ## Consistency across Storage and Postgres
 
@@ -235,13 +254,20 @@ Or run everything:
 npm run check
 ```
 
+To run the database authorization suite locally:
+
+```bash
+supabase start
+supabase test db
+```
+
 ## Roadmap
 
 The immediate roadmap is intentionally narrow:
 
-- local-Supabase integration tests for RLS and Storage policies;
 - bring-your-own tenant/membership authorization adapter;
 - safe delete workflow with compensation and audit metadata;
+- durability/reconciliation improvements for partial Storage/Postgres failures;
 - framework examples after the core API stabilizes.
 
 Roadmap work is tracked in GitHub Issues.
