@@ -2,6 +2,17 @@
 
 All notable changes to Tenant Evidence Kit will be documented here.
 
+## Unreleased
+
+### Changed
+
+- Raised the minimum supported Node.js version to 22.12 to match current Supabase JS and tooling support.
+- Added a committed npm lockfile for reproducible dependency resolution.
+
+### Added
+
+- Added unit coverage for the upload flow, compensated cleanup, cleanup failures, and signed URL TTL validation.
+
 ## 0.1.1 — 2026-08-24
 
 Maintenance release focused on package distribution and release security.

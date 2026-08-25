@@ -31,7 +31,7 @@ The core path, upload, metadata, listing, signed-access flow, reference RLS mode
 
 ## Requirements
 
-- Node.js 20+
+- Node.js 22.12+
 - TypeScript 5+
 - Supabase JS 2.x
 - a Supabase project with Auth, Postgres, and Storage

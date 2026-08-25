@@ -2,6 +2,12 @@
 
 Tenant Evidence Kit is security-sensitive infrastructure. The reference migration is intentionally small, but adopting teams remain responsible for their product's authorization model, data classification, retention obligations, and operational controls.
 
+## Supported runtime
+
+Tenant Evidence Kit supports Node.js 22.12 and later. Keep Node.js and
+`@supabase/supabase-js` on supported versions, and use the package in a
+browser only through a build tool that supports the package's ESM output.
+
 ## Reference security properties
 
 The included Supabase migration is designed around these properties:
