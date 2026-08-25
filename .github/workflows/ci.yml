@@ -26,3 +26,18 @@ jobs:
 
       - name: Check
         run: npm run check
+
+  authorization:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+
+      - name: Start local Supabase
+        run: supabase start
+
+      - name: Test database authorization
+        run: supabase test db

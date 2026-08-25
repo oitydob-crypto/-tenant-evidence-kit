@@ -148,15 +148,15 @@ The reference implementation follows five rules:
 
 ### Reference roles and permissions
 
-The bundled schema uses a small, closed role vocabulary. Unknown roles and unknown permissions fail closed.
+The bundled schema assigns sensitive deletion to `owner` and `admin`. Other active membership roles retain the existing read/create behavior for backward compatibility; unknown permission names fail closed.
 
 | Role | Read evidence | Create evidence | Delete evidence |
 | --- | --- | --- | --- |
 | `owner` | yes | yes | yes |
 | `admin` | yes | yes | yes |
-| `member` | yes | no | no |
+| `member` (or a custom active role) | yes | yes | no |
 
-Evidence creation and deletion are sensitive operations reserved for owners and admins. The metadata and Storage policies use the same permission for each operation, so an ordinary member cannot mutate either side independently. This also lets authorized uploaders run the SDK's compensating Storage deletion if metadata registration fails. Changing a record is intentionally not a permission at all. If facts need correcting, the consuming product should preserve the original evidence and append a new record or use an application-specific supersession model.
+Deletion is the sensitive operation reserved for owners and admins. Active members retain read and creation access, preserving the behavior of earlier releases. The metadata and Storage policies use the same permission for each operation, so an ordinary member cannot delete either side independently. Changing a record is intentionally not a permission at all. If facts need correcting, the consuming product should preserve the original evidence and append a new record or use an application-specific supersession model.
 
 See [SECURITY.md](SECURITY.md) before using the reference migration in production.
 
@@ -211,6 +211,9 @@ src/
 supabase/
   migrations/
     0001_tenant_evidence.sql
+    0002_authorization_hardening.sql
+  tests/
+    authorization.test.sql
 tests/
   path.test.ts
 examples/

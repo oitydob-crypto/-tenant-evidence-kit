@@ -14,8 +14,7 @@ create table if not exists public.tek_tenants (
 create table if not exists public.tek_tenant_memberships (
   tenant_id uuid not null references public.tek_tenants(id) on delete cascade,
   user_id uuid not null references auth.users(id) on delete cascade,
-  role text not null default 'member'
-    check (role in ('owner', 'admin', 'member')),
+  role text not null default 'member',
   active boolean not null default true,
   created_at timestamptz not null default now(),
   primary key (tenant_id, user_id)
@@ -78,8 +77,8 @@ as $$
       and membership.user_id = (select auth.uid())
       and membership.active = true
       and case requested_permission
-        when 'evidence.read' then membership.role in ('owner', 'admin', 'member')
-        when 'evidence.create' then membership.role in ('owner', 'admin')
+        when 'evidence.read' then true
+        when 'evidence.create' then true
         when 'evidence.delete' then membership.role in ('owner', 'admin')
         else false
       end

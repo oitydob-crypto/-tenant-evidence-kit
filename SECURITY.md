@@ -19,6 +19,16 @@ The included Supabase migration is designed around these properties:
 - browser clients are expected to use a publishable/anon key under RLS, never a service-role key;
 - signed URLs are temporary access artifacts, not permanent public links.
 
+## RLS execution boundary
+
+The isolation guarantees above assume queries run as database roles that are
+subject to Row Level Security, such as Supabase's `authenticated` role. The
+`service_role` credential bypasses RLS and must remain in trusted server-side
+code. PostgreSQL table owners and roles with `BYPASSRLS` can also bypass RLS
+(unless a table is configured with `FORCE ROW LEVEL SECURITY`). Operations run
+through any of those privileged identities are outside the toolkit's tenant
+isolation boundary and require separate authorization controls.
+
 ## Important production decisions left to adopters
 
 Before production use, decide and test:
