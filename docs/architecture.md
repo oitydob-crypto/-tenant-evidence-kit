@@ -76,10 +76,21 @@ This gives the consuming application enough information to alert, reconcile, or 
 The reference migration protects:
 
 - tenant rows from non-members;
-- evidence metadata from non-members;
-- Storage object upload/read/delete from users outside the tenant encoded in the object path.
+- evidence metadata with explicit `evidence.read`, `evidence.create`, and `evidence.delete` permission checks;
+- Storage object upload/read/delete with the same operation-specific checks for the tenant encoded in the object path;
+- sensitive deletion by granting it only to active `owner` and `admin` memberships while preserving read/create access for other active roles.
 
-A client cannot grant itself access by sending another tenant id because membership is checked against `auth.uid()` inside Postgres.
+A client cannot grant itself access by sending another tenant id because role and permission are checked against `auth.uid()` inside Postgres. Unsupported roles and permission names deny access rather than falling back to general membership.
+
+Installations that already applied the original schema must also apply
+`0002_authorization_hardening.sql`. It replaces the existing metadata and
+Storage policies without requiring membership data to be rewritten.
+
+## Evidence mutability
+
+`tek_evidence` is append-only by design. The migration both omits an `UPDATE` RLS policy and revokes the table-level `UPDATE` privilege from application roles. This makes the intended semantics auditable instead of relying only on an accidental missing policy.
+
+Creation records a new observation and remains available to active members. Owners and admins may delete, letting products implement deliberate removal workflows. Both operations are applied consistently to metadata and file bytes. Corrections, annotations, retention rules, and supersession are domain concerns and should be modeled as new facts rather than rewriting an evidence record.
 
 ## Extension boundary
 
