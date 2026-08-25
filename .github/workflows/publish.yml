@@ -3,9 +3,6 @@ name: Publish Package
 on:
   release:
     types: [published]
-  push:
-    branches:
-      - main
 
 permissions:
   contents: read
@@ -34,18 +31,13 @@ jobs:
       - name: Verify package
         run: npm run check
 
-      - name: Verify publish version
+      - name: Verify release tag matches package version
         shell: bash
         run: |
           PACKAGE_VERSION="$(node -p "require('./package.json').version")"
-          if [ "${GITHUB_EVENT_NAME}" = "release" ]; then
-            EXPECTED_TAG="v${PACKAGE_VERSION}"
-            if [ "${GITHUB_REF_NAME}" != "${EXPECTED_TAG}" ]; then
-              echo "Release tag ${GITHUB_REF_NAME} does not match package version ${PACKAGE_VERSION}. Expected ${EXPECTED_TAG}."
-              exit 1
-            fi
-          elif [ "${GITHUB_EVENT_NAME}" = "push" ] && [ "${PACKAGE_VERSION}" != "0.1.2" ]; then
-            echo "Corrected publish expected package version 0.1.2, found ${PACKAGE_VERSION}."
+          EXPECTED_TAG="v${PACKAGE_VERSION}"
+          if [ "${GITHUB_REF_NAME}" != "${EXPECTED_TAG}" ]; then
+            echo "Release tag ${GITHUB_REF_NAME} does not match package version ${PACKAGE_VERSION}. Expected ${EXPECTED_TAG}."
             exit 1
           fi
 
