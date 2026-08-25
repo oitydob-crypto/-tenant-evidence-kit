@@ -4,11 +4,28 @@ All notable changes to Tenant Evidence Kit will be documented here.
 
 ## Unreleased
 
+## 0.1.3 — 2026-08-25
+
+Authorization hardening release based on external review of the reference Supabase security model.
+
 ### Changed
 
 - Added role-based, operation-specific authorization for evidence metadata and Storage objects.
 - Restricted evidence deletion to owners and admins while preserving read and creation access for active members.
-- Made evidence metadata explicitly append-only and added regression coverage and security-model documentation.
+- Made evidence metadata explicitly append-only and documented the RLS execution boundary, including `service_role`, table-owner, and `BYPASSRLS` behavior.
+- Added `0002_authorization_hardening.sql` so existing installations can apply the hardened policies without rebuilding the schema.
+
+### Added
+
+- Added local Supabase/pgTAP authorization tests for privileged deletion, ordinary-member denial, same-tenant permitted flows, cross-tenant isolation, and blocked updates.
+- Added database authorization coverage to CI with `supabase test db`.
+
+## 0.1.2 — 2026-08-25
+
+Maintenance release focused on test coverage and runtime/tooling alignment.
+
+### Changed
+
 - Raised the minimum supported Node.js version to 22.12 to match current Supabase JS and tooling support.
 - Added a committed npm lockfile for reproducible dependency resolution.
 
