@@ -2,7 +2,7 @@
 
 A small TypeScript toolkit for **private, multi-tenant evidence workflows with Supabase**.
 
-**npm:** [`tenant-evidence-kit`](https://www.npmjs.com/package/tenant-evidence-kit) · **latest:** `0.1.1`
+**npm:** [`tenant-evidence-kit`](https://www.npmjs.com/package/tenant-evidence-kit) · **latest:** `0.1.2`
 
 It provides a reference architecture for a common problem: an application needs to attach photos, documents, or other evidence to a business object without making files public, leaking tenant data, or duplicating authorization rules across the UI and storage layer.
 
@@ -25,7 +25,7 @@ Tenant Evidence Kit keeps the reusable infrastructure separate from the product 
 
 ## Status
 
-**v0.1.1 — early public release.**
+**v0.1.2 — early public release.**
 
 The core path, upload, metadata, listing, signed-access flow, reference RLS model, and tests are present. The API may still evolve before 1.0.
 
