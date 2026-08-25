@@ -6,6 +6,9 @@ All notable changes to Tenant Evidence Kit will be documented here.
 
 ### Changed
 
+- Added role-based, operation-specific authorization for evidence metadata and Storage objects.
+- Restricted evidence creation and deletion to owners and admins, while keeping read access available to active members.
+- Made evidence metadata explicitly append-only and added regression coverage and security-model documentation.
 - Raised the minimum supported Node.js version to 22.12 to match current Supabase JS and tooling support.
 - Added a committed npm lockfile for reproducible dependency resolution.
 

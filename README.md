@@ -55,7 +55,7 @@ tek_evidence
 tenant-evidence-private (private Storage bucket)
 ```
 
-It also creates the `tek_create_tenant()` RPC and RLS policies that verify tenant membership for database rows and Storage objects.
+It also creates the `tek_create_tenant()` RPC and RLS policies that verify an active tenant role and an explicit operation permission for database rows and Storage objects.
 
 ### 2. Install
 
@@ -138,12 +138,25 @@ const records = await evidence.listEvidence({
 
 ## Security model
 
-The reference implementation follows four rules:
+The reference implementation follows five rules:
 
 1. **The bucket is private.** No permanent public URL is generated.
-2. **Tenant membership is checked server-side.** Storage policies derive the tenant from the first object-path segment and verify it against authenticated membership.
+2. **Permissions are checked server-side.** Storage policies derive the tenant from the first object-path segment and require the authenticated user's active role to grant the requested operation.
 3. **Metadata is protected by RLS.** A client-provided `tenantId` alone never grants access.
 4. **Service-role credentials stay server-side.** Normal application flows are expected to use authenticated Supabase clients.
+5. **Evidence is append-only.** Metadata can be created, read, or deliberately deleted, but it cannot be updated in place.
+
+### Reference roles and permissions
+
+The bundled schema uses a small, closed role vocabulary. Unknown roles and unknown permissions fail closed.
+
+| Role | Read evidence | Create evidence | Delete evidence |
+| --- | --- | --- | --- |
+| `owner` | yes | yes | yes |
+| `admin` | yes | yes | yes |
+| `member` | yes | no | no |
+
+Evidence creation and deletion are sensitive operations reserved for owners and admins. The metadata and Storage policies use the same permission for each operation, so an ordinary member cannot mutate either side independently. This also lets authorized uploaders run the SDK's compensating Storage deletion if metadata registration fails. Changing a record is intentionally not a permission at all. If facts need correcting, the consuming product should preserve the original evidence and append a new record or use an application-specific supersession model.
 
 See [SECURITY.md](SECURITY.md) before using the reference migration in production.
 

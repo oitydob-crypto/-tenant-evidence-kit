@@ -14,7 +14,8 @@ create table if not exists public.tek_tenants (
 create table if not exists public.tek_tenant_memberships (
   tenant_id uuid not null references public.tek_tenants(id) on delete cascade,
   user_id uuid not null references auth.users(id) on delete cascade,
-  role text not null default 'member',
+  role text not null default 'member'
+    check (role in ('owner', 'admin', 'member')),
   active boolean not null default true,
   created_at timestamptz not null default now(),
   primary key (tenant_id, user_id)
@@ -60,6 +61,36 @@ $$;
 revoke all on function tek_private.is_tenant_member(uuid) from public, anon, authenticated;
 grant execute on function tek_private.is_tenant_member(uuid) to authenticated;
 
+create or replace function tek_private.has_tenant_permission(
+  target_tenant_id uuid,
+  requested_permission text
+)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select exists (
+    select 1
+    from public.tek_tenant_memberships membership
+    where membership.tenant_id = target_tenant_id
+      and membership.user_id = (select auth.uid())
+      and membership.active = true
+      and case requested_permission
+        when 'evidence.read' then membership.role in ('owner', 'admin', 'member')
+        when 'evidence.create' then membership.role in ('owner', 'admin')
+        when 'evidence.delete' then membership.role in ('owner', 'admin')
+        else false
+      end
+  );
+$$;
+
+revoke all on function tek_private.has_tenant_permission(uuid, text)
+  from public, anon, authenticated;
+grant execute on function tek_private.has_tenant_permission(uuid, text)
+  to authenticated;
+
 create or replace function tek_private.object_tenant_id(object_name text)
 returns uuid
 language plpgsql
@@ -86,7 +117,10 @@ $$;
 revoke all on function tek_private.object_tenant_id(text) from public, anon, authenticated;
 grant execute on function tek_private.object_tenant_id(text) to authenticated;
 
-create or replace function tek_private.can_access_object(object_name text)
+create or replace function tek_private.can_access_object(
+  object_name text,
+  requested_permission text
+)
 returns boolean
 language sql
 stable
@@ -94,13 +128,17 @@ security definer
 set search_path = ''
 as $$
   select coalesce(
-    tek_private.is_tenant_member(tek_private.object_tenant_id(object_name)),
+    tek_private.has_tenant_permission(
+      tek_private.object_tenant_id(object_name),
+      requested_permission
+    ),
     false
   );
 $$;
 
-revoke all on function tek_private.can_access_object(text) from public, anon, authenticated;
-grant execute on function tek_private.can_access_object(text) to authenticated;
+revoke all on function tek_private.can_access_object(text, text)
+  from public, anon, authenticated;
+grant execute on function tek_private.can_access_object(text, text) to authenticated;
 
 create or replace function public.tek_create_tenant(tenant_name text)
 returns uuid
@@ -138,6 +176,11 @@ alter table public.tek_tenants enable row level security;
 alter table public.tek_tenant_memberships enable row level security;
 alter table public.tek_evidence enable row level security;
 
+-- Evidence is append-only: metadata may be inserted, read, or explicitly deleted,
+-- but it must never be rewritten in place. This revoke is defense in depth in
+-- addition to the deliberate absence of an UPDATE policy below.
+revoke update on public.tek_evidence from anon, authenticated;
+
 create policy "tenant members can read tenants"
 on public.tek_tenants
 for select
@@ -154,14 +197,14 @@ create policy "tenant members can read evidence"
 on public.tek_evidence
 for select
 to authenticated
-using (tek_private.is_tenant_member(tenant_id));
+using (tek_private.has_tenant_permission(tenant_id, 'evidence.read'));
 
 create policy "tenant members can insert evidence"
 on public.tek_evidence
 for insert
 to authenticated
 with check (
-  tek_private.is_tenant_member(tenant_id)
+  tek_private.has_tenant_permission(tenant_id, 'evidence.create')
   and (actor_user_id is null or actor_user_id = (select auth.uid()))
 );
 
@@ -169,7 +212,7 @@ create policy "tenant members can delete evidence metadata"
 on public.tek_evidence
 for delete
 to authenticated
-using (tek_private.is_tenant_member(tenant_id));
+using (tek_private.has_tenant_permission(tenant_id, 'evidence.delete'));
 
 insert into storage.buckets (id, name, public)
 values ('tenant-evidence-private', 'tenant-evidence-private', false)
@@ -181,7 +224,7 @@ for insert
 to authenticated
 with check (
   bucket_id = 'tenant-evidence-private'
-  and tek_private.can_access_object(name)
+  and tek_private.can_access_object(name, 'evidence.create')
 );
 
 create policy "tenant members can read evidence objects"
@@ -190,7 +233,7 @@ for select
 to authenticated
 using (
   bucket_id = 'tenant-evidence-private'
-  and tek_private.can_access_object(name)
+  and tek_private.can_access_object(name, 'evidence.read')
 );
 
 create policy "tenant members can delete evidence objects"
@@ -199,5 +242,5 @@ for delete
 to authenticated
 using (
   bucket_id = 'tenant-evidence-private'
-  and tek_private.can_access_object(name)
+  and tek_private.can_access_object(name, 'evidence.delete')
 );
