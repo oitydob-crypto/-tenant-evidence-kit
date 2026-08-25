@@ -4,7 +4,8 @@ on:
   release:
     types: [published]
   push:
-    branches: [main]
+    branches:
+      - main
 
 permissions:
   contents: read
@@ -12,7 +13,6 @@ permissions:
 
 jobs:
   publish:
-    if: github.event_name == 'release' || github.event.head_commit.message == 'release: publish v0.1.2 from corrected tag'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -44,8 +44,8 @@ jobs:
               echo "Release tag ${GITHUB_REF_NAME} does not match package version ${PACKAGE_VERSION}. Expected ${EXPECTED_TAG}."
               exit 1
             fi
-          elif [ "${PACKAGE_VERSION}" != "0.1.2" ]; then
-            echo "One-time corrected publish expected package version 0.1.2, found ${PACKAGE_VERSION}."
+          elif [ "${GITHUB_EVENT_NAME}" = "push" ] && [ "${PACKAGE_VERSION}" != "0.1.2" ]; then
+            echo "Corrected publish expected package version 0.1.2, found ${PACKAGE_VERSION}."
             exit 1
           fi
 
