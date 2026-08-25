@@ -1,6 +1,6 @@
 {
   "name": "tenant-evidence-kit",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "A TypeScript toolkit for private, multi-tenant evidence workflows with Supabase.",
   "type": "module",
   "license": "MIT",
