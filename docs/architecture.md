@@ -54,7 +54,7 @@ The default object path is:
 
 The first segment is security-relevant: Storage policies derive tenant scope from it and verify authenticated membership in Postgres.
 
-`objectId` prevents a filename from becoming the object identity. The original/sanitized filename remains useful for inspection without being trusted as an authorization primitive.
+`objectId` prevents a filename from becoming the object identity. The original/sanitized filename remains useful for inspection without being trusted as an authorization primitive. The client requires UUID tenant/object IDs and a safe subject segment; the audit migration also requires the first path segment to match `tek_evidence.tenant_id`.
 
 ## Cross-service consistency
 
@@ -65,11 +65,12 @@ For upload:
 ```text
 1. upload object
 2. insert metadata
-3. if metadata fails, attempt object removal
-4. if cleanup also fails, expose cleanupError
+3. reconcile an ambiguous metadata response
+4. if the row is absent, attempt object removal with trusted compensation authority
+5. if cleanup fails, expose cleanupError
 ```
 
-This gives the consuming application enough information to alert, reconcile, or retry rather than silently leaving an orphaned object.
+If reconciliation is unknown, the object is preserved and a retryable reconciliation error is returned. This gives the consuming application enough information to alert, reconcile, or retry rather than silently deleting a possibly valid object or leaving an untracked orphan.
 
 ## What RLS protects
 
@@ -83,8 +84,9 @@ The reference migration protects:
 A client cannot grant itself access by sending another tenant id because role and permission are checked against `auth.uid()` inside Postgres. Unsupported roles and permission names deny access rather than falling back to general membership.
 
 Installations that already applied the original schema must also apply
-`0002_authorization_hardening.sql`. It replaces the existing metadata and
-Storage policies without requiring membership data to be rewritten.
+`0002_authorization_hardening.sql` and `0003_audit_hardening.sql`. The latter
+validates the tenant/path invariant without requiring membership data to be
+rewritten.
 
 ## Evidence mutability
 

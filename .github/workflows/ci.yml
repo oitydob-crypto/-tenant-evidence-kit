@@ -9,6 +9,10 @@ on:
 permissions:
   contents: read
 
+env:
+  NODE_VERSION: 22.12.0
+  NPM_VERSION: 10.9.2
+
 jobs:
   check:
     runs-on: ubuntu-latest
@@ -19,7 +23,11 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Pin npm
+        run: npm install --global npm@${NPM_VERSION}
 
       - name: Install dependencies
         run: npm install
@@ -33,6 +41,18 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Pin npm
+        run: npm install --global npm@${NPM_VERSION}
+
+      - name: Install dependencies
+        run: npm install
+
       - name: Setup Supabase CLI
         uses: supabase/setup-cli@v1
 
@@ -41,3 +61,44 @@ jobs:
 
       - name: Test database authorization
         run: supabase test db
+
+  storage-integration:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Pin npm
+        run: npm install --global npm@${NPM_VERSION}
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+
+      - name: Start local Supabase
+        run: supabase start
+
+      - name: Export local Supabase credentials
+        shell: bash
+        run: |
+          SUPABASE_STATUS="$(supabase status -o env)"
+          API_URL="$(printf '%s\n' "${SUPABASE_STATUS}" | sed -n 's/^API_URL=//p' | tr -d '"')"
+          ANON_KEY="$(printf '%s\n' "${SUPABASE_STATUS}" | sed -n 's/^ANON_KEY=//p' | tr -d '"')"
+          SERVICE_ROLE_KEY="$(printf '%s\n' "${SUPABASE_STATUS}" | sed -n 's/^SERVICE_ROLE_KEY=//p' | tr -d '"')"
+          echo "SUPABASE_URL=${API_URL}" >> "${GITHUB_ENV}"
+          echo "SUPABASE_ANON_KEY=${ANON_KEY}" >> "${GITHUB_ENV}"
+          echo "SUPABASE_SERVICE_ROLE_KEY=${SERVICE_ROLE_KEY}" >> "${GITHUB_ENV}"
+
+      - name: Run Storage integration tests
+        run: npm run test:integration
+        env:
+          TEK_STORAGE_INTEGRATION: "1"
+

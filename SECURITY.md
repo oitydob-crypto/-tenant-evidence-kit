@@ -41,13 +41,16 @@ Before production use, decide and test:
 - audit-log requirements;
 - backup and disaster-recovery policy;
 - whether evidence is regulated or sensitive personal data in your jurisdiction;
-- whether additional encryption or regional data-residency controls are required.
+- whether additional encryption or regional data-residency controls are required;
+- the maximum signed URL lifetime accepted by the consuming product;
+- a reconciliation process for ambiguous Storage/Postgres outcomes;
+- whether a trusted server-side compensation client is available for ordinary member uploads.
 
 ## Storage + database consistency
 
-An object upload and a Postgres insert do not share one cross-service transaction. `uploadEvidence()` therefore attempts compensation: if metadata registration fails after a successful object upload, it attempts to remove the uploaded object before returning an error.
+An object upload and a Postgres insert do not share one cross-service transaction. `uploadEvidence()` reconciles the metadata row after an ambiguous response. It removes the object only when reconciliation proves the row is absent, using the optional trusted `compensationClient` when the authenticated caller cannot delete Storage objects.
 
-Applications should monitor failures where that cleanup attempt also fails. `TenantEvidenceError.cleanupError` is exposed for this reason.
+Applications should retry `RECONCILIATION_FAILED` and monitor `CLEANUP_FAILED`. `TenantEvidenceError.cleanupError`, `reconciliation`, and `cleanupAttempted` expose the state needed for a controlled reconciliation job. Never expose a service-role compensation client to browser code.
 
 ## Reporting a vulnerability
 
@@ -61,3 +64,7 @@ Until a dedicated security contact is established, report privately through the 
 - suggested remediation, if known.
 
 Never include production credentials or real sensitive evidence in a report.
+
+## Input and response validation
+
+The client validates UUID tenant/object IDs, safe subject/path segments, bucket and table identifiers, evidence kinds, provider response rows, and signed URL lifetimes. The hard signed URL maximum is 900 seconds. These checks complement, but do not replace, Supabase RLS and Storage policies.

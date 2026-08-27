@@ -1,7 +1,14 @@
-export { TenantEvidenceError } from "./errors";
-export { buildEvidencePath, sanitizeFileName } from "./path";
-export type { EvidencePathInput } from "./path";
-export { createTenantEvidenceKit } from "./kit";
+export { TenantEvidenceError } from "./errors.js";
+export {
+  buildEvidencePath,
+  normalizeObjectId,
+  normalizePathSegment,
+  normalizeTenantId,
+  sanitizeFileName,
+  validateEvidenceFilePath,
+} from "./path.js";
+export type { EvidencePathInput } from "./path.js";
+export { createTenantEvidenceKit } from "./kit.js";
 export type {
   EvidenceKind,
   EvidenceRecord,
@@ -9,4 +16,5 @@ export type {
   SignedEvidenceUrlInput,
   TenantEvidenceKitOptions,
   UploadEvidenceInput,
-} from "./types";
+} from "./types.js";
+

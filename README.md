@@ -2,7 +2,7 @@
 
 A small TypeScript toolkit for **private, multi-tenant evidence workflows with Supabase**.
 
-**npm:** [`tenant-evidence-kit`](https://www.npmjs.com/package/tenant-evidence-kit) · **latest:** `0.1.3`
+**npm:** [`tenant-evidence-kit`](https://www.npmjs.com/package/tenant-evidence-kit) · **current public:** `0.1.3` · **next release:** `0.2.0`
 
 It provides a reference architecture for a common problem: an application needs to attach photos, documents, or other evidence to a business object without making files public, leaking tenant data, or duplicating authorization rules across the UI and storage layer.
 
@@ -13,7 +13,9 @@ It provides a reference architecture for a common problem: an application needs 
 - stores evidence metadata separately from file bytes;
 - uses **Row Level Security (RLS)** for tenant isolation;
 - creates short-lived **signed URLs** instead of permanent public links;
-- compensates for a metadata failure by removing the uploaded object;
+- compensates for a metadata failure only after reconciliation proves the row is absent;
+- supports a trusted server-side compensation client for ordinary members that cannot delete Storage objects;
+- validates IDs, paths, response rows, evidence kinds, bucket/table identifiers, and signed URL lifetimes;
 - ships reference SQL migrations for tenant bootstrap, membership, evidence metadata, authorization, and Storage policies;
 - stays intentionally small: it does not impose a CRM, healthcare, rental, document, or workflow domain model.
 
@@ -25,9 +27,9 @@ Tenant Evidence Kit keeps the reusable infrastructure separate from the product 
 
 ## Status
 
-**v0.1.3 — early public release.**
+**0.2.0 — audit-hardening release candidate.**
 
-The core path, upload, metadata, listing, signed-access flow, reference RLS model, operation-specific authorization, upgrade migration, and local Supabase authorization tests are present. The API may still evolve before 1.0.
+The current public npm release remains `0.1.3`. This branch corrects the distributed ESM import path, hardens Storage/metadata consistency, validates the public API at runtime, adds Storage integration tests, and pins the release toolchain. The API remains pre-1.0 and may evolve before 1.0.
 
 ## Requirements
 
@@ -45,6 +47,13 @@ For a new installation, apply the migrations in order:
 ```text
 supabase/migrations/0001_tenant_evidence.sql
 supabase/migrations/0002_authorization_hardening.sql
+supabase/migrations/0003_audit_hardening.sql
+```
+
+If you already applied the schema shipped in `0.1.3`, apply only:
+
+```text
+supabase/migrations/0003_audit_hardening.sql
 ```
 
 If you already applied the schema shipped before v0.1.3, apply only the upgrade migration:
@@ -91,6 +100,16 @@ const evidence = createTenantEvidenceKit(supabase);
 
 Use the **publishable/anon client key**, not a service-role key in browser code. RLS is the security boundary.
 
+For a trusted server-side upload path, pass a separate compensation client:
+
+```ts
+const evidence = createTenantEvidenceKit(authenticatedClient, {
+  compensationClient: serverOnlyServiceRoleClient,
+});
+```
+
+Never expose `serverOnlyServiceRoleClient` or its credential to browser code.
+
 ### 4. Bootstrap a tenant
 
 An authenticated user can create a tenant and become its first owner through the reference RPC:
@@ -132,7 +151,7 @@ const { url } = await evidence.createSignedEvidenceUrl({
 });
 ```
 
-Signed URLs are intentionally short-lived. The reference default is 5 minutes.
+Signed URLs are intentionally short-lived. The default is 5 minutes and the hard maximum is 15 minutes.
 
 ### 7. List evidence for a subject
 
@@ -145,13 +164,15 @@ const records = await evidence.listEvidence({
 
 ## Security model
 
-The reference implementation follows five rules:
+The reference implementation follows these rules:
 
 1. **The bucket is private.** No permanent public URL is generated.
 2. **Permissions are checked server-side.** Storage policies derive the tenant from the first object-path segment and require the authenticated user's active role to grant the requested operation.
 3. **Metadata is protected by RLS.** A client-provided `tenantId` alone never grants access.
-4. **Service-role credentials stay server-side.** Normal application flows are expected to use authenticated Supabase clients.
+4. **Service-role credentials stay server-side.** The optional compensation client is for trusted server processes only.
 5. **Evidence is append-only.** Metadata can be created, read, or deliberately deleted, but it cannot be updated in place.
+6. **Metadata paths are bound to their tenant.** Migration `0003_audit_hardening.sql` rejects a row whose first path segment does not match `tenant_id`.
+7. **Public inputs and provider responses are validated.** Malformed paths, identifiers, evidence kinds, rows, and signed URL lifetimes fail closed.
 
 ### Reference roles and permissions
 
@@ -175,23 +196,29 @@ The repository includes local Supabase/pgTAP tests for the authorization boundar
 - ordinary-member delete denial;
 - same-tenant read/create access;
 - cross-tenant read/insert/update/delete denial;
-- explicit blocking of in-place evidence updates.
+- explicit blocking of in-place evidence updates;
+- Storage object upload/read/list/delete policy behavior;
+- same-tenant and cross-tenant Storage integration behavior, including signed URL expiry.
 
-These database authorization tests run in CI alongside typechecking, unit tests, and the package build.
+The database and package authorization tests run in CI alongside typechecking, unit tests, the build, and the package smoke test.
 
 ## Consistency across Storage and Postgres
 
-Supabase Storage and Postgres do not participate in one shared database transaction. The upload flow therefore uses a compensation strategy:
+Supabase Storage and Postgres do not participate in one shared database transaction. The upload flow therefore uses reconciliation and compensated cleanup:
 
 ```text
 upload private object
         ↓
-insert protected metadata
+reconcile metadata response
         ↓
-metadata fails? → attempt object cleanup → return typed error
+metadata present? → return record
+        ↓ absent
+trusted cleanup client removes object
+        ↓
+typed result with retry/reconciliation state
 ```
 
-This is deliberately described as **compensated consistency**, not as a false cross-service atomic transaction.
+If reconciliation is unknown, the object is preserved and `TenantEvidenceError` reports `RECONCILIATION_FAILED`. If cleanup fails, the error reports `CLEANUP_FAILED` and exposes `cleanupError`. See [docs/consistency.md](docs/consistency.md).
 
 ## Release security
 
@@ -199,8 +226,8 @@ Package releases are published from GitHub Actions through npm **Trusted Publish
 
 Before publishing, the workflow:
 
-- installs dependencies;
-- runs typecheck, tests, and build;
+- uses pinned Node.js 22.12.0 and npm 10.9.2;
+- installs dependencies and runs typecheck, tests, build, and package smoke test;
 - verifies that the GitHub release tag matches the version in `package.json`;
 - publishes to npm only after those checks pass.
 
@@ -233,10 +260,11 @@ supabase/
     0002_authorization_hardening.sql
   tests/
     authorization.test.sql
+    storage_authorization.test.sql
 tests/
   path.test.ts
 examples/
-  basic.ts
+  basic.mjs
 ```
 
 ## Development
@@ -246,6 +274,7 @@ npm install
 npm run typecheck
 npm test
 npm run build
+npm run package:smoke
 ```
 
 Or run everything:
@@ -259,7 +288,10 @@ To run the database authorization suite locally:
 ```bash
 supabase start
 supabase test db
+TEK_STORAGE_INTEGRATION=1 npm run test:integration
 ```
+
+See [docs/testing.md](docs/testing.md) for the local keys required by the Storage integration suite.
 
 ## Roadmap
 
