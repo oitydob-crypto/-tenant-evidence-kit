@@ -109,6 +109,7 @@ select throws_ok(
   $$insert into public.tek_evidence (id, tenant_id, subject_id, file_path)
     values ('20000000-0000-0000-0000-000000000007', '10000000-0000-0000-0000-000000000001', 'mismatched-path', '10000000-0000-0000-0000-000000000002/mismatched-path/20000000-0000-0000-0000-000000000007-file')$$,
   '23514',
+  null,
   'evidence path tenant must match metadata tenant'
 );
 
