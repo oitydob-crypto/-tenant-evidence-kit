@@ -56,10 +56,11 @@ If you already applied the schema shipped in `0.1.3`, apply only:
 supabase/migrations/0003_audit_hardening.sql
 ```
 
-If you already applied the schema shipped before v0.1.3, apply only the upgrade migration:
+If you already applied the schema shipped before v0.1.3, apply both upgrade migrations in order:
 
 ```text
 supabase/migrations/0002_authorization_hardening.sql
+supabase/migrations/0003_audit_hardening.sql
 ```
 
 The migrations create and configure:
@@ -258,13 +259,24 @@ supabase/
   migrations/
     0001_tenant_evidence.sql
     0002_authorization_hardening.sql
+    0003_audit_hardening.sql
   tests/
     authorization.test.sql
     storage_authorization.test.sql
 tests/
   path.test.ts
+  kit.test.ts
+  integration/
+    storage.test.ts
 examples/
   basic.mjs
+docs/
+  api.md
+  consistency.md
+  migrations.md
+  release.md
+  testing.md
+  threat-model.md
 ```
 
 ## Development
