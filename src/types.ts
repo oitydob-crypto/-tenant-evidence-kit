@@ -1,3 +1,5 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
+
 export type EvidenceKind = "photo" | "document" | "other";
 
 export interface EvidenceRecord {
@@ -38,4 +40,11 @@ export interface SignedEvidenceUrlInput {
 export interface TenantEvidenceKitOptions {
   bucket?: string;
   table?: string;
+  /**
+   * Trusted server-side client used to reconcile metadata and compensate an
+   * object upload when the caller's client cannot delete Storage objects.
+   * Never expose a service-role client in browser code.
+   */
+  compensationClient?: SupabaseClient;
 }
+

@@ -2,6 +2,29 @@
 
 All notable changes to Tenant Evidence Kit will be documented here.
 
+## 0.2.0 — Unreleased
+
+Audit-hardening release based on the independent review dated 2026-08-26.
+
+### Fixed
+
+- Fixed Node-native ESM package imports by emitting explicit `.js` specifiers and added an install-from-tarball smoke test.
+- Added metadata reconciliation before object compensation so an ambiguous insert response does not immediately delete a possibly valid object.
+- Added an optional trusted server-side compensation client for cleanup when an ordinary authenticated member cannot delete Storage objects.
+- Bound new evidence metadata to the tenant UUID in the first Storage path segment.
+- Bounded signed URL lifetimes to 900 seconds and validated bucket, table, ID, path, kind, and provider response contracts.
+
+### Added
+
+- Added stable error codes, retryability, cleanup-attempt, and reconciliation state to `TenantEvidenceError`.
+- Added local pgTAP Storage policy coverage and an opt-in local Supabase integration suite for same-tenant and cross-tenant Storage flows, signed URLs, and expiry.
+- Added an executable package-based example and API, consistency, migration, release, testing, and threat-model documentation.
+
+### Changed
+
+- Pinned CI and release workflows to Node.js 22.12.0 and npm 10.9.2.
+- Added `0003_audit_hardening.sql` for existing installations.
+
 ## Unreleased
 
 ## 0.1.3 — 2026-08-25

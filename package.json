@@ -1,6 +1,6 @@
 {
   "name": "tenant-evidence-kit",
-  "version": "0.1.3",
+  "version": "0.2.0",
   "description": "A TypeScript toolkit for private, multi-tenant evidence workflows with Supabase.",
   "type": "module",
   "license": "MIT",
@@ -32,7 +32,10 @@
     "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "check": "npm run typecheck && npm test && npm run build"
+    "package:smoke": "node scripts/package-smoke.mjs",
+    "test:integration": "vitest run tests/integration",
+    "example": "npm run build && node examples/basic.mjs",
+    "check": "npm run typecheck && npm test && npm run build && npm run package:smoke"
   },
   "engines": {
     "node": ">=22.12.0"
@@ -57,3 +60,4 @@
     "privacy"
   ]
 }
+

@@ -1,7 +1,7 @@
 begin;
 
 create extension if not exists pgtap with schema extensions;
-select plan(10);
+select plan(11);
 
 insert into auth.users (id, email)
 values
@@ -103,6 +103,14 @@ select is(
   (select count(*) from public.tek_evidence where id = '20000000-0000-0000-0000-000000000004'),
   1::bigint,
   'cross-tenant delete is blocked'
+);
+
+select throws_ok(
+  $$insert into public.tek_evidence (id, tenant_id, subject_id, file_path)
+    values ('20000000-0000-0000-0000-000000000007', '10000000-0000-0000-0000-000000000001', 'mismatched-path', '10000000-0000-0000-0000-000000000002/mismatched-path/20000000-0000-0000-0000-000000000007-file')$$,
+  '23514',
+  null,
+  'evidence path tenant must match metadata tenant'
 );
 
 select * from finish();
