@@ -60,6 +60,7 @@ select throws_ok(
       '{}'::jsonb
     )$$,
   '42501',
+  null,
   'cross-tenant object upload is blocked'
 );
 select lives_ok(
