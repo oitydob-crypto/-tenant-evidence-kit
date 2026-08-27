@@ -140,7 +140,7 @@ integrationDescribe("local Supabase Storage integration", () => {
       .from("tenant-evidence-private")
       .list(`${state.tenantA}/${state.subjectId}`);
     expect(listed.error).toBeNull();
-    expect(listed.data?.some((object) => object.name === "integration.txt")).toBe(true);
+    expect(listed.data?.some((object) => object.name.endsWith("-integration.txt"))).toBe(true);
 
     const downloaded = await state.ownerA.storage
       .from("tenant-evidence-private")
@@ -184,7 +184,12 @@ integrationDescribe("local Supabase Storage integration", () => {
     const removed = await state.ownerB.storage
       .from("tenant-evidence-private")
       .remove([state.record.filePath]);
-    expect(removed.error).not.toBeNull();
+    expect(removed.error).toBeNull();
+
+    const stillPresent = await state.ownerA.storage
+      .from("tenant-evidence-private")
+      .download(state.record.filePath);
+    expect(stillPresent.error).toBeNull();
   });
 });
 
